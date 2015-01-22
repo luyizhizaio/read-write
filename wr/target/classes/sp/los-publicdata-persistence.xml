@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-2.5.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd"
+	default-autowire="byName">
+	
+	
+	<context:component-scan base-package="com.uuzz.los">
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+
+	<bean id="userTransactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager" >
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	
+ 	<tx:annotation-driven 
+       transaction-manager="userTransactionManager" proxy-target-class="true"/>
+ 	
+	<bean id="userSqlMapClient" class="org.springframework.orm.ibatis.SqlMapClientFactoryBean"
+		p:dataSource-ref="dataSource">
+		<property name="configLocations">
+			<list>
+				<value>classpath:sqlmap/sqlmap-config.xml</value>
+			</list>
+		</property>
+	</bean>
+	<bean id="userSqlMapClientTemplate" class="org.springframework.orm.ibatis.SqlMapClientTemplate">
+		<property name="sqlMapClient" ref="userSqlMapClient"/>
+	</bean>
+	
+	
+	
+	<!--切面BEAN(数据源切换)-->  
+    <bean id="dataSourceAdvice" class="com.uuzz.los.dao.DataSourceAdvice">
+        <property name="readMethodPrefixs">
+            <value>get,find,count,is,check,query,has,determine,list</value>
+        </property>
+    </bean>  
+      
+    <!--配置Service监控 -->  
+    <aop:config>
+       <aop:advisor pointcut="execution(* com..*ServiceImpl.*(..))" advice-ref="dataSourceAdvice" order="100"/>
+       <!-- <aop:advisor pointcut="execution(* com..*Manager.*(..))" advice-ref="dataSourceAdvice" order="100"/> -->
+    </aop:config>
+	
+	
+</beans>
